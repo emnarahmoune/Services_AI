@@ -13,8 +13,7 @@ app = FastAPI(
 
 # Modèle IA plus intelligent, multilingue français + anglais.
 # Plus lourd que MiniLM, mais meilleur pour le matching sémantique.
-model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
-
+model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 class IaMatchingRequestDTO(BaseModel):
     candidatureId: Optional[int] = None
