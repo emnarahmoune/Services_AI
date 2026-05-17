@@ -79,12 +79,15 @@ def get_embedding(text: str):
 
     data = response.json()
 
-    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
-        if isinstance(data[0][0], list):
-            return np.mean(np.array(data[0]), axis=0).tolist()
-        return data[0]
+   if isinstance(data, list) and len(data) > 0 and isinstance(data[0], (int, float)):
+    return data
 
-    raise RuntimeError(f"Format embedding invalide: {data}")
+if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
+    if len(data[0]) > 0 and isinstance(data[0][0], list):
+        return np.mean(np.array(data[0]), axis=0).tolist()
+    return data[0]
+
+raise RuntimeError(f"Format embedding invalide: {data}")
 
 
 def semantic_score_between_requirement_and_cv(requirement: str, cv_chunks: List[str]) -> float:
