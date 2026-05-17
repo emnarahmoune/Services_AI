@@ -8,7 +8,7 @@ import re
 app = Flask(__name__)
 CORS(app)
 
-MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 model = SentenceTransformer(MODEL_NAME)
 
 MAX_RESULTS = 8

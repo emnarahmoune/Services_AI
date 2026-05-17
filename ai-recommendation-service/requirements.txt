@@ -1,6 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 flask
 flask-cors
-sentence-transformers
-torch
-transformers
 gunicorn
+sentence-transformers
+transformers
+numpy
+torch==2.2.2+cpu
