@@ -25,15 +25,21 @@ def get_embedding(text):
     if not HF_TOKEN:
         raise RuntimeError("HF_TOKEN manquant dans Render Environment Variables")
 
+    payload = {
+        "inputs": str(text or "")
+    }
+
     response = requests.post(
         API_URL,
         headers=HEADERS,
-        json={"inputs": text},
+        json=payload,
         timeout=60
     )
 
     if response.status_code != 200:
-        raise RuntimeError(f"Erreur Hugging Face: {response.status_code} - {response.text}")
+        raise RuntimeError(
+            f"Erreur Hugging Face: {response.status_code} - {response.text}"
+        )
 
     data = response.json()
 
@@ -46,7 +52,6 @@ def get_embedding(text):
         return data[0]
 
     raise RuntimeError(f"Format embedding invalide: {data}")
-
 
 def cosine_score(text1, text2):
     emb1 = get_embedding(text1)
