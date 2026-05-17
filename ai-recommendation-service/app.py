@@ -37,6 +37,9 @@ def get_embedding(text):
 
     data = response.json()
 
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], (int, float)):
+        return data
+
     if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
         if len(data[0]) > 0 and isinstance(data[0][0], list):
             return np.mean(np.array(data[0]), axis=0).tolist()
