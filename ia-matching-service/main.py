@@ -9,10 +9,10 @@ import requests
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-app = FastAPI(title="IA Matching CV Offre", version="3.1.0")
+app = FastAPI(title="IA Matching CV Offre", version="3.2.0")
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/pipeline/feature-extraction"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
@@ -53,6 +53,33 @@ class IaMatchingResponseDTO(BaseModel):
     recommandationIa: str
 
 
+def get_embedding(text: str):
+    if not HF_TOKEN:
+        raise RuntimeError("HF_TOKEN manquant dans les variables Render")
+
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        json={"inputs": str(text or "")},
+        timeout=60
+    )
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Erreur HuggingFace: {response.status_code} - {response.text}")
+
+    data = response.json()
+
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], (int, float)):
+        return data
+
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
+        if len(data[0]) > 0 and isinstance(data[0][0], list):
+            return np.mean(np.array(data[0]), axis=0).tolist()
+        return data[0]
+
+    raise RuntimeError(f"Format embedding invalide: {data}")
+
+
 def normalize_text(text: str) -> str:
     if not text:
         return ""
@@ -66,28 +93,6 @@ def normalize_text(text: str) -> str:
 def split_cv_into_chunks(cv_text: str, max_words: int = 80) -> List[str]:
     words = cv_text.split()
     return [" ".join(words[i:i + max_words]) for i in range(0, len(words), max_words)]
-
-
-def get_embedding(text: str):
-    if not HF_TOKEN:
-        raise RuntimeError("HF_TOKEN manquant dans les variables Render")
-
-    response = requests.post(API_URL, headers=headers, json={"inputs": text}, timeout=60)
-
-    if response.status_code != 200:
-        raise RuntimeError(f"Erreur HuggingFace: {response.status_code} - {response.text}")
-
-    data = response.json()
-
-   if isinstance(data, list) and len(data) > 0 and isinstance(data[0], (int, float)):
-    return data
-
-if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
-    if len(data[0]) > 0 and isinstance(data[0][0], list):
-        return np.mean(np.array(data[0]), axis=0).tolist()
-    return data[0]
-
-raise RuntimeError(f"Format embedding invalide: {data}")
 
 
 def semantic_score_between_requirement_and_cv(requirement: str, cv_chunks: List[str]) -> float:
