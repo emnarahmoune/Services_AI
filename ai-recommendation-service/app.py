@@ -13,8 +13,7 @@ CORS(app)
 
 MODEL_NAME = "HuggingFace Inference API - paraphrase-multilingual-MiniLM-L12-v2"
 HF_TOKEN = os.getenv("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-
+API_URL = "https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 HEADERS = {
     "Authorization": f"Bearer {HF_TOKEN}"
 }
