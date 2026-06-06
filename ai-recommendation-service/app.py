@@ -85,6 +85,40 @@ def text_contains_any(text, words):
     return any(normalize_text(word) in text_norm for word in words)
 
 
+def extract_formation_title(value):
+    """
+    Accepte formationsSuivies sous plusieurs formats:
+    - "Leadership et management"
+    - {"titre": "..."}
+    - {"title": "..."}
+    - {"formation": "..."}
+    - {"formation": {"titre": "..."}}
+    """
+    if isinstance(value, dict):
+        nested = value.get("formation")
+        if isinstance(nested, dict):
+            return (
+                nested.get("titre")
+                or nested.get("title")
+                or nested.get("nom")
+                or nested.get("name")
+                or ""
+            )
+
+        return (
+            value.get("titre")
+            or value.get("title")
+            or value.get("nom")
+            or value.get("name")
+            or value.get("formation")
+            or value.get("formationTitre")
+            or value.get("formationTitle")
+            or ""
+        )
+
+    return value
+
+
 VIDEO_LIBRARY = {
     "communication": [
         {"titre": "Communication professionnelle", "urlYoutube": "https://www.youtube.com/watch?v=HAnw168huqA", "ordre": 1},
@@ -462,7 +496,7 @@ def recommend_existing_formations(payload):
     required_skills = normalize_skill_dict(payload.get("requiredSkills", {}))
 
     formations_suivies = [
-        normalize_text(x)
+        normalize_text(extract_formation_title(x))
         for x in payload.get("formationsSuivies", []) or []
     ]
 
@@ -494,7 +528,9 @@ def recommend_existing_formations(payload):
 
     for formation in formations:
         title = formation.get("titre") or formation.get("title") or ""
-        if normalize_text(title) in formations_suivies:
+        title_norm = normalize_text(title)
+
+        if title_norm and title_norm in formations_suivies:
             continue
         formation_text = formation_to_text(formation)
         if is_forbidden_for_domain(domain, formation_text):
@@ -643,6 +679,22 @@ def recommend_existing_formations(payload):
 
     results = sorted(results, key=lambda x: x["score"], reverse=True)[:MAX_RESULTS]
 
+    # Si des formations internes existent mais qu'aucune ne passe les seuils de score,
+    # on bascule aussi vers les formations externes.
+    if not results:
+        externes = get_formations_externes(domain)
+        return {
+            "mode": mode,
+            "poste": poste,
+            "detectedDomain": domain,
+            "gapSkills": gaps,
+            "targetSkills": target_skills,
+            "recommendations": externes,
+            "catalogueEpuise": True,
+            "source": "EXTERNE",
+            "message": "Aucune formation interne disponible ou assez pertinente. Voici des formations externes recommandées."
+        }
+
     return {
         "mode": mode,
         "poste": poste,
@@ -652,7 +704,7 @@ def recommend_existing_formations(payload):
         "recommendations": results,
         "catalogueEpuise": False,
         "source": "INTERNE",
-        "message": "Recommandations générées." if results else "Aucune formation assez pertinente trouvée."
+        "message": "Recommandations générées."
     }
 
 
@@ -677,7 +729,7 @@ def health():
         "status": "UP",
         "service": "formation-semantic-recommendation-agent",
         "model": MODEL_NAME,
-        "version": "9.0.0",
+        "version": "9.1.0",
         "logic": "semantic matching using Hugging Face Inference API",
         "features": [
             "recommend existing formations",
@@ -696,7 +748,7 @@ def health():
 def home():
     return jsonify({
         "message": "Agent IA formations internes fonctionne",
-        "version": "9.0.0",
+        "version": "9.1.0",
         "endpoints": {
             "health": "/health",
             "recommend": "/recommend"
