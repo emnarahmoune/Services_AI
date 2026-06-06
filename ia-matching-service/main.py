@@ -57,12 +57,15 @@ def get_embedding(text: str):
     if not HF_TOKEN:
         raise RuntimeError("HF_TOKEN manquant dans les variables Render")
 
-    response = requests.post(
-        API_URL,
-        headers=headers,
-        json={"inputs": str(text or "")},
-        timeout=60
-    )
+    try:
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json={"inputs": str(text or "")},
+            timeout=30  # ✅ réduit de 60 à 30
+        )
+    except requests.Timeout:
+        raise RuntimeError("HuggingFace timeout — service indisponible après 30s")
 
     if response.status_code != 200:
         raise RuntimeError(f"Erreur HuggingFace: {response.status_code} - {response.text}")
@@ -135,7 +138,10 @@ def calculate_items_matching(required_items, cv_text, cv_chunks, threshold=0.50)
 
 
 def calculate_average_score(details: dict) -> int:
-    return round(sum(details.values()) / len(details)) if details else 0
+    # ✅ Score neutre si aucune compétence requise
+    if not details:
+        return 70
+    return round(sum(details.values()) / len(details))
 
 
 MONTHS_FR_EN = {
@@ -350,7 +356,10 @@ def calculate_offer_cv_similarity(request: IaMatchingRequestDTO, cv_text: str) -
         return 0
 
     offer_emb = get_embedding(offer_text)
-    cv_emb = get_embedding(cv_text[:5000])
+
+    # ✅ Correction — couper proprement au dernier espace
+    cv_short = cv_text[:5000].rsplit(' ', 1)[0] if len(cv_text) > 5000 else cv_text
+    cv_emb = get_embedding(cv_short)
 
     similarity = float(cosine_similarity([offer_emb], [cv_emb])[0][0])
     return max(0, min(100, round(similarity * 100)))
