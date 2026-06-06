@@ -328,6 +328,65 @@ FORMATIONS_EXTERNES = {
             ]
         }
     ],
+    "DATA": [
+        {
+            "formationId": None,
+            "formation": "Power BI pour Data Analyst",
+            "title": "Power BI pour Data Analyst",
+            "provider": "Coursera",
+            "url": "https://www.coursera.org/search?query=power%20bi%20data%20analyst",
+            "description": "Analyse de données, tableaux de bord, reporting et visualisation avec Power BI.",
+            "level": "Intermédiaire",
+            "score": 0.80,
+            "semanticScore": 0.80,
+            "skillScore": 0.75,
+            "priorityScore": 0.70,
+            "type": "EXTERNE",
+            "matchedSkills": ["power bi", "reporting", "dashboard", "data analysis"],
+            "reason": "Formation externe recommandée selon le poste et les compétences ciblées.",
+            "videos": [
+                {"titre": "Power BI", "urlYoutube": "https://www.youtube.com/watch?v=AGrl-H87pRU", "ordre": 1}
+            ]
+        },
+        {
+            "formationId": None,
+            "formation": "SQL pour l'analyse de données",
+            "title": "SQL pour l'analyse de données",
+            "provider": "Udemy",
+            "url": "https://www.udemy.com/courses/search/?q=sql%20data%20analysis",
+            "description": "Requêtes SQL, extraction de données, agrégations, analyse et reporting.",
+            "level": "Intermédiaire",
+            "score": 0.78,
+            "semanticScore": 0.78,
+            "skillScore": 0.74,
+            "priorityScore": 0.70,
+            "type": "EXTERNE",
+            "matchedSkills": ["sql", "data analysis", "reporting"],
+            "reason": "Formation externe recommandée selon le poste et les compétences ciblées.",
+            "videos": [
+                {"titre": "SQL Data Analysis", "urlYoutube": "https://www.youtube.com/watch?v=7S_tz1z_5bA", "ordre": 1}
+            ]
+        },
+        {
+            "formationId": None,
+            "formation": "Python pour Data Science",
+            "title": "Python pour Data Science",
+            "provider": "Coursera",
+            "url": "https://www.coursera.org/search?query=python%20data%20science",
+            "description": "Python, pandas, analyse de données, visualisation et bases du machine learning.",
+            "level": "Intermédiaire",
+            "score": 0.76,
+            "semanticScore": 0.76,
+            "skillScore": 0.72,
+            "priorityScore": 0.68,
+            "type": "EXTERNE",
+            "matchedSkills": ["python", "pandas", "data science", "machine learning"],
+            "reason": "Formation externe recommandée selon le poste et les compétences ciblées.",
+            "videos": [
+                {"titre": "Python Data Science", "urlYoutube": "https://www.youtube.com/watch?v=LHBE6Q9XlzI", "ordre": 1}
+            ]
+        }
+    ],
     "GENERAL": [
         {
             "formationId": None,
@@ -353,31 +412,173 @@ FORMATIONS_EXTERNES = {
 
 
 def get_formations_externes(domain, mode="EXTERNE"):
-    """
-    Conserve le type d'origine :
-    - GAP_POSTE
-    - BOOST_COMPETENCES
-
-    même pour les formations externes.
-    """
-
-    base = FORMATIONS_EXTERNES.get(
-        domain,
-        FORMATIONS_EXTERNES["GENERAL"]
-    )
+    """Retourne les formations externes du domaine détecté, en gardant le mode d'origine."""
+    base = FORMATIONS_EXTERNES.get(domain, FORMATIONS_EXTERNES["GENERAL"])
 
     result = []
-
     for formation in base:
         item = formation.copy()
-
         item["type"] = mode
         item["source"] = "EXTERNE"
-
         result.append(item)
 
     return result
 
+
+def get_all_formations_externes(mode="EXTERNE"):
+    """Retourne toutes les formations externes, tous domaines confondus, sans doublons."""
+    seen = set()
+    result = []
+
+    for formations in FORMATIONS_EXTERNES.values():
+        for formation in formations:
+            title_norm = normalize_text(formation.get("title") or formation.get("formation") or "")
+            provider_norm = normalize_text(formation.get("provider") or "")
+            key = f"{title_norm}|{provider_norm}"
+
+            if key in seen:
+                continue
+
+            seen.add(key)
+            item = formation.copy()
+            item["type"] = mode
+            item["source"] = "EXTERNE"
+            result.append(item)
+
+    return result
+
+
+def external_formation_to_text(item):
+    return " ".join([
+        str(item.get("formation") or ""),
+        str(item.get("title") or ""),
+        str(item.get("provider") or ""),
+        str(item.get("description") or ""),
+        str(item.get("level") or ""),
+        " ".join(item.get("matchedSkills") or [])
+    ])
+
+
+def lexical_overlap_score(query_text, item_text):
+    query_words = set(normalize_text(query_text).split())
+    item_words = set(normalize_text(item_text).split())
+
+    ignored = {
+        "formation", "formations", "poste", "professionnel", "professionnelle",
+        "competences", "competence", "requises", "adapter", "adaptee",
+        "developpement", "renforcer", "ameliorer", "booster", "pratique"
+    }
+
+    query_words = {w for w in query_words if len(w) > 2 and w not in ignored}
+    item_words = {w for w in item_words if len(w) > 2 and w not in ignored}
+
+    if not query_words or not item_words:
+        return 0.0
+
+    common = query_words.intersection(item_words)
+    return len(common) / max(1, len(query_words))
+
+
+def is_clearly_bad_external(poste, target_skills, item):
+    """Filtre de sécurité métier pour éviter des recommandations clairement hors sujet."""
+    context = normalize_text(" ".join([poste or "", " ".join(target_skills or [])]))
+    item_text = normalize_text(external_formation_to_text(item))
+
+    data_context_words = [
+        "data analyst", "analyste data", "analyste donnees", "analyste données",
+        "business intelligence", "power bi", "tableau", "sql", "reporting",
+        "dashboard", "data", "analyse", "analytics", "python", "pandas"
+    ]
+
+    dev_only_words = [
+        "spring", "angular", "frontend", "front end", "backend", "back end",
+        "microservices", "developpeur", "développeur", "java backend"
+    ]
+
+    if any(w in context for w in data_context_words):
+        if any(w in item_text for w in dev_only_words):
+            data_item_words = ["data", "sql", "power bi", "reporting", "analytics", "python", "pandas", "dashboard"]
+            if not any(w in item_text for w in data_item_words):
+                return True
+
+    rh_context_words = ["rh", "ressources humaines", "recrutement", "paie", "personnel"]
+    if any(w in context for w in rh_context_words):
+        if any(w in item_text for w in dev_only_words):
+            return True
+
+    finance_context_words = ["finance", "comptable", "comptabilite", "comptabilité", "audit", "budget"]
+    if any(w in context for w in finance_context_words):
+        if any(w in item_text for w in dev_only_words):
+            return True
+
+    return False
+
+
+def rank_external_formations(domain, mode, query_text, target_skills, poste, max_results=MAX_RESULTS):
+    """
+    Classe les formations externes globalement par similarité sémantique.
+    On ne se limite pas au domaine détecté : cela marche pour n'importe quel poste.
+    """
+    candidates = get_all_formations_externes(mode=mode)
+    ranked = []
+
+    for item in candidates:
+        if is_clearly_bad_external(poste, target_skills, item):
+            continue
+
+        item_text = external_formation_to_text(item)
+
+        try:
+            semantic = cosine_score(query_text, item_text)
+        except Exception:
+            semantic = 0.0
+
+        lexical = lexical_overlap_score(
+            " ".join([query_text or "", poste or "", " ".join(target_skills or [])]),
+            item_text
+        )
+
+        final_score = (semantic * 0.75) + (lexical * 0.25)
+
+        # Bonus si une compétence ciblée apparaît explicitement dans la formation externe
+        item_text_norm = normalize_text(item_text)
+        matched = []
+        for skill in target_skills or []:
+            skill_norm = normalize_text(skill)
+            if skill_norm and skill_norm in item_text_norm:
+                matched.append(skill)
+
+        if matched:
+            final_score += 0.08
+
+        final_score = max(0.0, min(final_score, 0.99))
+
+        item_copy = item.copy()
+        item_copy["type"] = mode
+        item_copy["source"] = "EXTERNE"
+        item_copy["semanticScore"] = round(semantic, 3)
+        item_copy["skillScore"] = round(lexical, 3)
+        item_copy["score"] = round(final_score, 3)
+
+        if matched:
+            item_copy["matchedSkills"] = matched
+
+        item_copy["reason"] = (
+            "Formation externe recommandée par similarité avec le poste "
+            f"{poste or 'ciblé'} et les compétences à développer."
+        )
+
+        ranked.append(item_copy)
+
+    ranked = sorted(ranked, key=lambda x: x.get("score", 0), reverse=True)
+
+    # Seuil souple : si rien ne passe, on garde quand même les 3 meilleurs pour éviter écran vide
+    filtered = [item for item in ranked if item.get("score", 0) >= 0.35]
+
+    if not filtered:
+        filtered = ranked[:3]
+
+    return filtered[:max_results]
 
 def build_videos_for_recommendation(matched_skills, formation_title, poste, domain):
     search_text = " ".join([
@@ -401,6 +602,7 @@ def detect_domain(poste, user_skills, required_skills):
     domains = {
         "RH": ["rh", "ressources humaines", "responsable rh", "recrutement", "paie", "droit du travail", "administration du personnel", "gestion du personnel", "sirh", "talent acquisition"],
         "IT": ["developpeur", "développeur", "java", "spring", "angular", "backend", "frontend", "informatique", "software", "devops"],
+        "DATA": ["data analyst", "data scientist", "business analyst", "analyste data", "analyste donnees", "analyste données", "power bi", "tableau", "sql", "excel", "etl", "big data", "python", "pandas", "machine learning", "data warehouse", "reporting", "dashboard", "analytics", "business intelligence"],
         "COMMERCIAL": ["commercial", "vente", "prospection", "relation client", "crm", "negociation", "négociation"],
         "FINANCE": ["finance", "comptable", "comptabilite", "comptabilité", "controle de gestion", "audit", "budget"],
         "MARKETING": ["marketing", "seo", "communication digitale", "reseaux sociaux", "réseaux sociaux", "branding"],
@@ -417,6 +619,7 @@ def detect_domain(poste, user_skills, required_skills):
 
 FORBIDDEN_BY_DOMAIN = {
     "RH": ["java", "spring", "angular", "typescript", "javascript", "backend", "frontend", "api", "docker", "devops", "programmation", "developpeur", "développeur", "sql"],
+    "DATA": ["spring", "angular", "frontend", "backend", "microservices", "developpeur", "développeur", "react", "vue", "devops"],
     "COMMERCIAL": ["java", "spring", "angular", "backend", "frontend", "docker", "devops"],
     "FINANCE": ["java", "spring", "angular", "backend", "frontend", "docker", "devops"],
     "MARKETING": ["java", "spring", "angular", "backend", "frontend", "docker", "devops"]
@@ -567,7 +770,13 @@ def recommend_existing_formations(payload):
         nb_total = len(formations)
         catalogue_epuise = nb_suivies >= nb_total
 
-        externes = get_formations_externes(domain, mode)
+        externes = rank_external_formations(
+            domain=domain,
+            mode=mode,
+            query_text=query_text,
+            target_skills=target_skills,
+            poste=poste
+        )
 
         if catalogue_epuise:
             message = (
@@ -703,7 +912,13 @@ def recommend_existing_formations(payload):
     # Si des formations internes existent mais qu'aucune ne passe les seuils de score,
     # on bascule aussi vers les formations externes.
     if not results:
-        externes = get_formations_externes(domain, mode)
+        externes = rank_external_formations(
+            domain=domain,
+            mode=mode,
+            query_text=query_text,
+            target_skills=target_skills,
+            poste=poste
+        )
         return {
             "mode": mode,
             "poste": poste,
@@ -750,11 +965,12 @@ def health():
         "status": "UP",
         "service": "formation-semantic-recommendation-agent",
         "model": MODEL_NAME,
-        "version": "9.2.0",
+        "version": "9.3.0",
         "logic": "semantic matching using Hugging Face Inference API",
         "features": [
             "recommend existing formations",
             "external formations fallback when catalogue exhausted",
+            "global semantic ranking for external formations",
             "same JSON structure for internal and external formations",
             "new poste semantic understanding",
             "gap poste recommendations",
@@ -769,7 +985,7 @@ def health():
 def home():
     return jsonify({
         "message": "Agent IA formations internes fonctionne",
-        "version": "9.2.0",
+        "version": "9.3.0",
         "endpoints": {
             "health": "/health",
             "recommend": "/recommend"
