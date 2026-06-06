@@ -352,10 +352,31 @@ FORMATIONS_EXTERNES = {
 }
 
 
-def get_formations_externes(domain):
-    """Retourne les formations externes selon le domaine détecté.
-    Même structure JSON que les formations internes pour un affichage identique côté frontend."""
-    return FORMATIONS_EXTERNES.get(domain, FORMATIONS_EXTERNES["GENERAL"])
+def get_formations_externes(domain, mode="EXTERNE"):
+    """
+    Conserve le type d'origine :
+    - GAP_POSTE
+    - BOOST_COMPETENCES
+
+    même pour les formations externes.
+    """
+
+    base = FORMATIONS_EXTERNES.get(
+        domain,
+        FORMATIONS_EXTERNES["GENERAL"]
+    )
+
+    result = []
+
+    for formation in base:
+        item = formation.copy()
+
+        item["type"] = mode
+        item["source"] = "EXTERNE"
+
+        result.append(item)
+
+    return result
 
 
 def build_videos_for_recommendation(matched_skills, formation_title, poste, domain):
@@ -546,7 +567,7 @@ def recommend_existing_formations(payload):
         nb_total = len(formations)
         catalogue_epuise = nb_suivies >= nb_total
 
-        externes = get_formations_externes(domain)
+        externes = get_formations_externes(domain, mode)
 
         if catalogue_epuise:
             message = (
@@ -682,7 +703,7 @@ def recommend_existing_formations(payload):
     # Si des formations internes existent mais qu'aucune ne passe les seuils de score,
     # on bascule aussi vers les formations externes.
     if not results:
-        externes = get_formations_externes(domain)
+        externes = get_formations_externes(domain, mode)
         return {
             "mode": mode,
             "poste": poste,
@@ -729,7 +750,7 @@ def health():
         "status": "UP",
         "service": "formation-semantic-recommendation-agent",
         "model": MODEL_NAME,
-        "version": "9.1.0",
+        "version": "9.2.0",
         "logic": "semantic matching using Hugging Face Inference API",
         "features": [
             "recommend existing formations",
@@ -748,7 +769,7 @@ def health():
 def home():
     return jsonify({
         "message": "Agent IA formations internes fonctionne",
-        "version": "9.1.0",
+        "version": "9.2.0",
         "endpoints": {
             "health": "/health",
             "recommend": "/recommend"
