@@ -25,9 +25,7 @@ def get_embedding(text):
     if not HF_TOKEN:
         raise RuntimeError("HF_TOKEN manquant dans Render Environment Variables")
 
-    payload = {
-        "inputs": str(text or "")
-    }
+    payload = {"inputs": str(text or "")}
 
     response = requests.post(
         API_URL,
@@ -53,6 +51,7 @@ def get_embedding(text):
 
     raise RuntimeError(f"Format embedding invalide: {data}")
 
+
 def cosine_score(text1, text2):
     emb1 = get_embedding(text1)
     emb2 = get_embedding(text2)
@@ -70,18 +69,14 @@ def normalize_text(value):
 
 def normalize_skill_dict(skills):
     result = {}
-
     for skill, level in (skills or {}).items():
         skill_norm = normalize_text(skill)
-
         try:
             level_int = int(level)
         except Exception:
             level_int = 0
-
         if skill_norm:
             result[skill_norm] = max(0, min(level_int, 5))
-
     return result
 
 
@@ -128,6 +123,206 @@ VIDEO_LIBRARY = {
     ]
 }
 
+# ─────────────────────────────────────────────────────────────
+#  FORMATIONS EXTERNES — même structure que les formations internes
+#  Utilisées quand le catalogue interne est épuisé
+# ─────────────────────────────────────────────────────────────
+FORMATIONS_EXTERNES = {
+    "RH": [
+        {
+            "formationId": None,
+            "formation": "Certification RH professionnelle",
+            "title": "Certification RH professionnelle",
+            "provider": "Coursera",
+            "url": "https://www.coursera.org/search?query=ressources+humaines",
+            "description": "Formation complète en gestion des ressources humaines : recrutement, paie, droit du travail.",
+            "level": "Intermédiaire",
+            "score": 0.80,
+            "semanticScore": 0.80,
+            "skillScore": 0.75,
+            "priorityScore": 0.70,
+            "type": "EXTERNE",
+            "matchedSkills": ["recrutement", "rh", "gestion du personnel"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Introduction RH", "urlYoutube": "https://www.youtube.com/watch?v=HAnw168huqA", "ordre": 1},
+                {"titre": "Recrutement RH", "urlYoutube": "https://www.youtube.com/watch?v=HG68Ymazo18", "ordre": 2}
+            ]
+        },
+        {
+            "formationId": None,
+            "formation": "Recrutement et sourcing avancé",
+            "title": "Recrutement et sourcing avancé",
+            "provider": "LinkedIn Learning",
+            "url": "https://www.linkedin.com/learning/search?keywords=recrutement",
+            "description": "Maîtrisez les techniques modernes de recrutement et de sourcing de candidats.",
+            "level": "Avancé",
+            "score": 0.75,
+            "semanticScore": 0.75,
+            "skillScore": 0.70,
+            "priorityScore": 0.65,
+            "type": "EXTERNE",
+            "matchedSkills": ["recrutement", "sourcing", "talent acquisition"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Techniques de recrutement", "urlYoutube": "https://www.youtube.com/watch?v=HG68Ymazo18", "ordre": 1},
+                {"titre": "Sourcing candidats", "urlYoutube": "https://www.youtube.com/watch?v=4FQY3u4UxS0", "ordre": 2}
+            ]
+        },
+        {
+            "formationId": None,
+            "formation": "Droit du travail et gestion sociale",
+            "title": "Droit du travail et gestion sociale",
+            "provider": "Udemy",
+            "url": "https://www.udemy.com/courses/search/?q=droit+du+travail",
+            "description": "Comprendre le cadre légal du droit du travail et la gestion administrative du personnel.",
+            "level": "Débutant",
+            "score": 0.72,
+            "semanticScore": 0.72,
+            "skillScore": 0.68,
+            "priorityScore": 0.60,
+            "type": "EXTERNE",
+            "matchedSkills": ["droit du travail", "administration du personnel"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Droit du travail", "urlYoutube": "https://www.youtube.com/watch?v=4Ko4b38N7gE", "ordre": 1},
+                {"titre": "Contrat de travail", "urlYoutube": "https://www.youtube.com/watch?v=O_4LwZ2pJzQ", "ordre": 2}
+            ]
+        }
+    ],
+    "IT": [
+        {
+            "formationId": None,
+            "formation": "Spring Boot & Microservices",
+            "title": "Spring Boot & Microservices",
+            "provider": "Udemy",
+            "url": "https://www.udemy.com/courses/search/?q=spring+boot",
+            "description": "Développez des applications backend robustes avec Spring Boot et l'architecture microservices.",
+            "level": "Avancé",
+            "score": 0.82,
+            "semanticScore": 0.82,
+            "skillScore": 0.78,
+            "priorityScore": 0.75,
+            "type": "EXTERNE",
+            "matchedSkills": ["spring", "java", "backend", "microservices"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Spring Boot tutorial", "urlYoutube": "https://www.youtube.com/watch?v=9SGDpanrc8U", "ordre": 1}
+            ]
+        },
+        {
+            "formationId": None,
+            "formation": "Angular - Développement Frontend",
+            "title": "Angular - Développement Frontend",
+            "provider": "Coursera",
+            "url": "https://www.coursera.org/search?query=angular",
+            "description": "Maîtrisez Angular pour créer des interfaces web modernes et réactives.",
+            "level": "Intermédiaire",
+            "score": 0.78,
+            "semanticScore": 0.78,
+            "skillScore": 0.74,
+            "priorityScore": 0.70,
+            "type": "EXTERNE",
+            "matchedSkills": ["angular", "typescript", "frontend"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Angular crash course", "urlYoutube": "https://www.youtube.com/watch?v=3dHNOWTI7H8", "ordre": 1}
+            ]
+        }
+    ],
+    "MANAGEMENT": [
+        {
+            "formationId": None,
+            "formation": "Leadership et management d'équipe",
+            "title": "Leadership et management d'équipe",
+            "provider": "LinkedIn Learning",
+            "url": "https://www.linkedin.com/learning/search?keywords=management",
+            "description": "Développez vos compétences en leadership, gestion d'équipe et communication managériale.",
+            "level": "Intermédiaire",
+            "score": 0.77,
+            "semanticScore": 0.77,
+            "skillScore": 0.72,
+            "priorityScore": 0.68,
+            "type": "EXTERNE",
+            "matchedSkills": ["leadership", "management", "communication"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Leadership", "urlYoutube": "https://www.youtube.com/watch?v=ktlTxC4QG8g", "ordre": 1},
+                {"titre": "Management d'équipe", "urlYoutube": "https://www.youtube.com/watch?v=Q2vQkHjS4xQ", "ordre": 2}
+            ]
+        }
+    ],
+    "COMMERCIAL": [
+        {
+            "formationId": None,
+            "formation": "Techniques de vente et négociation",
+            "title": "Techniques de vente et négociation",
+            "provider": "Udemy",
+            "url": "https://www.udemy.com/courses/search/?q=vente+negociation",
+            "description": "Maîtrisez les techniques de vente, la prospection client et la négociation commerciale.",
+            "level": "Intermédiaire",
+            "score": 0.76,
+            "semanticScore": 0.76,
+            "skillScore": 0.71,
+            "priorityScore": 0.67,
+            "type": "EXTERNE",
+            "matchedSkills": ["vente", "negociation", "prospection"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Techniques de vente", "urlYoutube": "https://www.youtube.com/watch?v=8sjA90hvnQ0", "ordre": 1}
+            ]
+        }
+    ],
+    "FINANCE": [
+        {
+            "formationId": None,
+            "formation": "Finance d'entreprise et contrôle de gestion",
+            "title": "Finance d'entreprise et contrôle de gestion",
+            "provider": "Coursera",
+            "url": "https://www.coursera.org/search?query=finance+entreprise",
+            "description": "Apprenez les fondamentaux de la finance d'entreprise, budgétisation et contrôle de gestion.",
+            "level": "Intermédiaire",
+            "score": 0.74,
+            "semanticScore": 0.74,
+            "skillScore": 0.70,
+            "priorityScore": 0.65,
+            "type": "EXTERNE",
+            "matchedSkills": ["finance", "comptabilite", "controle de gestion"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Finance d'entreprise", "urlYoutube": "https://www.youtube.com/watch?v=HAnw168huqA", "ordre": 1}
+            ]
+        }
+    ],
+    "GENERAL": [
+        {
+            "formationId": None,
+            "formation": "Développement personnel et professionnel",
+            "title": "Développement personnel et professionnel",
+            "provider": "Coursera",
+            "url": "https://www.coursera.org/search?query=developpement+professionnel",
+            "description": "Renforcez vos compétences transversales : communication, organisation, gestion du temps.",
+            "level": "Débutant",
+            "score": 0.70,
+            "semanticScore": 0.70,
+            "skillScore": 0.65,
+            "priorityScore": 0.60,
+            "type": "EXTERNE",
+            "matchedSkills": ["communication", "organisation", "gestion du temps"],
+            "reason": "Formation externe recommandée car le catalogue interne est épuisé.",
+            "videos": [
+                {"titre": "Développement des compétences", "urlYoutube": "https://www.youtube.com/watch?v=Q2vQkHjS4xQ", "ordre": 1}
+            ]
+        }
+    ]
+}
+
+
+def get_formations_externes(domain):
+    """Retourne les formations externes selon le domaine détecté.
+    Même structure JSON que les formations internes pour un affichage identique côté frontend."""
+    return FORMATIONS_EXTERNES.get(domain, FORMATIONS_EXTERNES["GENERAL"])
+
 
 def build_videos_for_recommendation(matched_skills, formation_title, poste, domain):
     search_text = " ".join([
@@ -136,13 +331,10 @@ def build_videos_for_recommendation(matched_skills, formation_title, poste, doma
         poste or "",
         domain or ""
     ])
-
     search_norm = normalize_text(search_text)
-
     for key, videos in VIDEO_LIBRARY.items():
         if key != "default" and normalize_text(key) in search_norm:
             return videos
-
     return VIDEO_LIBRARY["default"]
 
 
@@ -161,7 +353,6 @@ def detect_domain(poste, user_skills, required_skills):
     }
 
     scores = {}
-
     for domain, keywords in domains.items():
         scores[domain] = sum(1 for keyword in keywords if normalize_text(keyword) in text)
 
@@ -183,18 +374,15 @@ def is_forbidden_for_domain(domain, formation_text):
 
 def analyze_gap(user_skills, required_skills):
     gaps = {}
-
     for skill, required_level in required_skills.items():
         current_level = user_skills.get(skill, 0)
         gap = required_level - current_level
-
         if gap > 0:
             gaps[skill] = {
                 "requiredLevel": required_level,
                 "currentLevel": current_level,
                 "gap": gap
             }
-
     return gaps
 
 
@@ -210,21 +398,13 @@ def formation_to_text(formation):
 
 def build_query(mode, poste, user_skills, required_skills, gaps):
     poste_norm = normalize_text(poste)
-
     inferred_skills = []
 
     if "rh" in poste_norm or "ressources humaines" in poste_norm:
         inferred_skills = [
-            "recrutement",
-            "ressources humaines",
-            "gestion du personnel",
-            "administration du personnel",
-            "droit du travail",
-            "paie",
-            "communication interne",
-            "gestion des conflits",
-            "formation professionnelle",
-            "sirh"
+            "recrutement", "ressources humaines", "gestion du personnel",
+            "administration du personnel", "droit du travail", "paie",
+            "communication interne", "gestion des conflits", "formation professionnelle", "sirh"
         ]
 
     if mode == "GAP_POSTE":
@@ -244,7 +424,6 @@ def build_query(mode, poste, user_skills, required_skills, gaps):
             "formation adaptée au poste",
             "développement compétences métier"
         ])
-
         return query, target_skills
 
     weak_skills = [skill for skill, level in user_skills.items() if level <= 2]
@@ -262,20 +441,16 @@ def build_query(mode, poste, user_skills, required_skills, gaps):
         " ".join(target_skills),
         "formation pratique progression professionnelle"
     ])
-
     return query, target_skills
 
 
 def matched_skills_for_formation(target_skills, formation):
     formation_text = normalize_text(formation_to_text(formation))
     matched = []
-
     for skill in target_skills:
         skill_norm = normalize_text(skill)
-
         if skill_norm and skill_norm in formation_text:
             matched.append(skill)
-
     return matched
 
 
@@ -292,7 +467,6 @@ def recommend_existing_formations(payload):
     ]
 
     formations = payload.get("formations", []) or []
-
     domain = detect_domain(poste, user_skills, required_skills)
     gaps = analyze_gap(user_skills, required_skills)
 
@@ -312,6 +486,7 @@ def recommend_existing_formations(payload):
             "gapSkills": gaps,
             "targetSkills": target_skills,
             "recommendations": [],
+            "catalogueEpuise": False,
             "message": "Aucune formation active reçue depuis Spring Boot."
         }
 
@@ -319,26 +494,42 @@ def recommend_existing_formations(payload):
 
     for formation in formations:
         title = formation.get("titre") or formation.get("title") or ""
-
         if normalize_text(title) in formations_suivies:
             continue
-
         formation_text = formation_to_text(formation)
-
         if is_forbidden_for_domain(domain, formation_text):
             continue
-
         usable_formations.append(formation)
 
+    # ─────────────────────────────────────────────────────────────
+    #  CATALOGUE ÉPUISÉ → on retourne les formations externes
+    #  avec la même structure que les formations internes
+    # ─────────────────────────────────────────────────────────────
     if not usable_formations:
+        nb_suivies = len(formations_suivies)
+        nb_total = len(formations)
+        catalogue_epuise = nb_suivies >= nb_total
+
+        externes = get_formations_externes(domain)
+
+        if catalogue_epuise:
+            message = (
+                f"Félicitations ! Vous avez complété toutes les formations disponibles "
+                f"({nb_suivies} formations). Voici des formations externes recommandées."
+            )
+        else:
+            message = "Aucune formation interne compatible. Voici des formations externes recommandées."
+
         return {
             "mode": mode,
             "poste": poste,
             "detectedDomain": domain,
             "gapSkills": gaps,
             "targetSkills": target_skills,
-            "recommendations": [],
-            "message": "Aucune formation compatible après filtrage métier."
+            "recommendations": externes,
+            "catalogueEpuise": catalogue_epuise,
+            "source": "EXTERNE",
+            "message": message
         }
 
     results = []
@@ -365,10 +556,8 @@ def recommend_existing_formations(payload):
                 "droit du travail", "personnel", "sirh", "talent",
                 "communication", "conflits", "management", "formation professionnelle"
             ]
-
             if any(normalize_text(w) in formation_text_norm for w in rh_words):
                 domain_bonus = 0.18
-
             if "rh" in domaine_norm or "soft" in domaine_norm or "management" in domaine_norm:
                 domain_bonus = max(domain_bonus, 0.12)
 
@@ -402,14 +591,12 @@ def recommend_existing_formations(payload):
         if mode == "GAP_POSTE":
             if semantic_score < 0.50 and not matched and domain_bonus == 0:
                 continue
-
             if final_score < 0.50:
                 continue
 
         if mode == "BOOST_COMPETENCES":
             if semantic_score < 0.50 and not matched:
                 continue
-
             if final_score < 0.50:
                 continue
 
@@ -449,7 +636,9 @@ def recommend_existing_formations(payload):
             "type": mode,
             "matchedSkills": displayed_matched_skills,
             "reason": reason,
-            "videos": videos
+            "videos": videos,
+            "catalogueEpuise": False,
+            "source": "INTERNE"
         })
 
     results = sorted(results, key=lambda x: x["score"], reverse=True)[:MAX_RESULTS]
@@ -461,6 +650,8 @@ def recommend_existing_formations(payload):
         "gapSkills": gaps,
         "targetSkills": target_skills,
         "recommendations": results,
+        "catalogueEpuise": False,
+        "source": "INTERNE",
         "message": "Recommandations générées." if results else "Aucune formation assez pertinente trouvée."
     }
 
@@ -486,12 +677,13 @@ def health():
         "status": "UP",
         "service": "formation-semantic-recommendation-agent",
         "model": MODEL_NAME,
-        "version": "8.2.0",
+        "version": "9.0.0",
         "logic": "semantic matching using Hugging Face Inference API",
         "features": [
             "recommend existing formations",
+            "external formations fallback when catalogue exhausted",
+            "same JSON structure for internal and external formations",
             "new poste semantic understanding",
-            "new competence semantic understanding",
             "gap poste recommendations",
             "boost competence recommendations",
             "anti out-of-domain filter",
@@ -504,6 +696,7 @@ def health():
 def home():
     return jsonify({
         "message": "Agent IA formations internes fonctionne",
+        "version": "9.0.0",
         "endpoints": {
             "health": "/health",
             "recommend": "/recommend"
